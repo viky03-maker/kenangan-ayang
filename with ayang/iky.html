@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kenangan Kita ❤️</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system}
+    body{background:#0f1220;color:#fff;min-height:100vh}
+    header{padding:24px;text-align:center}
+    header h1{font-size:2rem;margin-bottom:8px}
+    header p{opacity:.8}
+    .container{max-width:1100px;margin:auto;padding:16px}
+    .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .toolbar input{padding:10px 12px;border-radius:10px;border:none;outline:none;min-width:220px}
+    .toolbar button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;background:#ff5fa2;color:#fff}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+    .card{position:relative;border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:0 10px 25px rgba(0,0,0,.35)}
+    .card img{width:100%;height:220px;object-fit:cover;display:block}
+    .card .meta{position:absolute;left:0;right:0;bottom:0;padding:10px;background:linear-gradient(transparent,rgba(0,0,0,.7));font-size:.85rem}
+    .empty{opacity:.6;text-align:center;margin-top:48px}
+    /* modal */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:10}
+    .modal.active{display:flex}
+    .modal-content{max-width:90vw;max-height:90vh;position:relative}
+    .modal img{max-width:100%;max-height:100%;border-radius:16px}
+    .modal .caption{margin-top:10px;text-align:center;opacity:.9}
+    .modal .close{position:absolute;top:-40px;right:0;background:#ff5fa2;border:none;color:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
+    footer{opacity:.6;text-align:center;padding:24px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kenangan Kita ❤️</h1>
+    <p>Album digital penuh cerita</p>
+  </header>
+
+  <div class="container">
+    <div class="toolbar">
+      <input id="search" placeholder="Cari kenangan..." />
+      <input type="file" id="upload" accept="image/*" />
+      <button id="addDemo">Tambah Foto Demo</button>
+    </div>
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty">Belum ada foto 😢</div>
+  </div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <button class="close" id="close">Tutup</button>
+      <img id="modalImg" />
+      <div id="caption" class="caption"></div>
+    </div>
+  </div>
+
+  <footer>
+    Dibuat dengan ❤️ pakai JavaScript
+  </footer>
+
+  <script>
+    // ===== SIMPLE PASSWORD GATE =====
+    const PASS_KEY = 'kenangan-pass';
+    const savedPass = localStorage.getItem(PASS_KEY);
+    if(!savedPass){
+      const p = prompt('Masukkan password album kenangan ❤️');
+      if(p) localStorage.setItem(PASS_KEY, p);
+      else location.reload();
+    } else {
+      const p = prompt('Masukkan password album kenangan ❤️');
+      if(p !== savedPass) alert('Password salah 😢');
+    }
+
+    // ===== DATA (LOCAL STORAGE) =====
+    const STORAGE_KEY = 'kenangan-gallery-v1';
+    // ===== DEFAULT FOTO DARI FOLDER (GITHUB) =====
+    const defaultPhotos = [
+      { src: 'assets/photos/1.jpg', caption: 'Kenangan pertama ❤️' },
+      { src: 'assets/photos/2.jpg', caption: 'Jalan bareng ayang 🌸' },
+      { src: 'assets/photos/3.jpg', caption: 'Hari bahagia ✨' }
+    ];
+
+    let photos = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultPhotos;
+
+    const grid = document.getElementById('grid');
+    const empty = document.getElementById('empty');
+    const searchInput = document.getElementById('search');
+    const upload = document.getElementById('upload');
+
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(photos)); }
+
+    function render(list = photos){
+      grid.innerHTML = '';
+      empty.style.display = list.length ? 'none' : 'block';
+      list.forEach((p)=>{
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${p.src}" alt="${p.caption}" />
+          <div class="meta">${p.caption}</div>
+        `;
+        card.onclick = ()=>openModal(p);
+        grid.appendChild(card);
+      });
+    }
+
+    // ===== MODAL =====
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    const caption = document.getElementById('caption');
+    document.getElementById('close').onclick = ()=> modal.classList.remove('active');
+
+    function openModal(p){
+      modalImg.src = p.src;
+      caption.textContent = p.caption;
+      modal.classList.add('active');
+    }
+
+    // ===== SEARCH =====
+    searchInput.addEventListener('input', ()=>{
+      const q = searchInput.value.toLowerCase();
+      const filtered = photos.filter(p=>p.caption.toLowerCase().includes(q));
+      render(filtered);
+    });
+
+    // ===== UPLOAD FOTO =====
+    upload.addEventListener('change', ()=>{
+      const file = upload.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const cap = prompt('Caption kenangan 💌') || 'Kenangan bareng ayang ❤️';
+        photos.unshift({ src: reader.result, caption: cap });
+        save();
+        render();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // ===== DEMO ADD =====
+    document.getElementById('addDemo').onclick = ()=>{
+      const demo = {
+        src: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800',
+        caption: 'Hari bahagia bareng ayang ✨'
+      };
+      photos.unshift(demo);
+      save();
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>
